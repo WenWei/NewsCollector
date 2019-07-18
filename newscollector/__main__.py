@@ -11,6 +11,9 @@ from crawl.general import file_to_set
 from parserlib.parsercontext import ParserContext
 import json
 import datetime
+from dbutils import DbUtils
+import os
+
 
 # 執行 logger 設定
 logger_config.init()
@@ -25,6 +28,7 @@ NUMBER_OF_THREADS = 1
 queue = Queue()  # Thread queue
 Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME)
 parserContext = ParserContext()
+dbutil = DbUtils(os.getenv('NewsCollectorMongoDbConnectionString', 'mongodb://localhost:27017/'))
 
 # 建立工作執行緒，當主線結束也會結束
 def create_workers():
@@ -57,8 +61,17 @@ def crawl():
 
 def result_callback(contentmodel):
     m = parserContext.parseContentModel(contentmodel)
-    jsonString = json.dumps(m, default = myconverter)
-    logger.info(jsonString)
+    # jsonString = json.dumps(m, default = myconverter)
+    # logger.info(jsonString)
+    try:
+        db = dbutil.getDatabase(PROJECT_NAME)
+        collectionName = get_domain_name(contentmodel['page_url']).replace('.','_')
+        collection = db[collectionName]
+        collection.find_and_modify(query={'page_url':m['page_url']}, update={"$set": m}, upsert=False, full_response= True)
+        # insert_id = collection.insert_one(m).inserted_id
+        # logger.info('inserted: '+ insert_id)
+    except Exception as e:
+        logger.error(e)
 
 def myconverter(o):
     if isinstance(o, datetime.datetime):

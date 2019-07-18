@@ -11,7 +11,7 @@ class LinkFinder(HTMLParser):
         super().__init__()
         self.base_url = base_url
         self.page_url = page_url
-        self.links = set()
+        self.links = []
 
     def handle_starttag(self, tag, attrs):
         if tag == 'a':
@@ -20,7 +20,7 @@ class LinkFinder(HTMLParser):
                     url = parse.urljoin(self.base_url, value.strip(' \t\n\r'))
                     print('handle_tag: '+url)
                     if re.match('https?://', url):
-                        self.links.add(url)
+                        self.links.append(url)
 
     def page_links(self):
         return self.links

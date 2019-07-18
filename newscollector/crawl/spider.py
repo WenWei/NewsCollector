@@ -11,7 +11,9 @@ import logging
 import datetime
 import time
 
+
 logger = logging.getLogger()
+
 
 class Spider:
     
@@ -46,12 +48,13 @@ class Spider:
             print(thread_name + 'now crawling ' + page_url)
             print('Queue ' + str(len(Spider.queue)) + ' | Crawled '+ str(len(Spider.crawled)))
             contentmodel = Spider.gather_content(page_url)
-            Spider.add_link_to_queue(contentmodel['links'])
-            Spider.queue.remove(page_url)
-            Spider.crawled.add(page_url)
-            Spider.update_files()
-            if result_callback!=None:
-                result_callback(contentmodel)
+            if contentmodel is not None:
+                Spider.add_link_to_queue(contentmodel['links'])
+                Spider.queue.remove(page_url)
+                Spider.crawled.add(page_url)
+                Spider.update_files()
+                if result_callback!=None:
+                    result_callback(contentmodel)
 
     @staticmethod
     def gather_content(page_url):
@@ -62,7 +65,7 @@ class Spider:
             'contenttype': None,
             'content': None,
             'status': CONTENT_STATUS_UNKNOW,
-            'links': set()
+            'links': []
         }
         try:
             req = Request(page_url)
