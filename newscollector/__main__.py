@@ -1,11 +1,20 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import logger_config
+import logging
 import threading
 from queue import Queue
 from crawl.spider import Spider
 from crawl.domain import get_domain_name
 from crawl.general import file_to_set
+from parserlib.parsercontext import ParserContext
+import json
+import datetime
+
+# 執行 logger 設定
+logger_config.init()
+logger = logging.getLogger()
 
 PROJECT_NAME = 'thenewboston'
 HOMEPAGE = 'https://www.jinse.com/'
@@ -15,6 +24,7 @@ CRAWLED_FILE ='data/' + PROJECT_NAME + 'crawled.txt'
 NUMBER_OF_THREADS = 1
 queue = Queue()  # Thread queue
 Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME)
+parserContext = ParserContext()
 
 # 建立工作執行緒，當主線結束也會結束
 def create_workers():
@@ -27,7 +37,7 @@ def create_workers():
 def work():
     while True:
         url = queue.get()
-        Spider.crawl_page(threading.current_thread().name, url)
+        Spider.crawl_page(threading.current_thread().name, url, result_callback)
         queue.task_done()
 
 # 每個 queue 設為新工作
@@ -44,6 +54,15 @@ def crawl():
     if len(queued_links) > 0:
         print(str(len(queued_links)) + ' links in the queue')
         create_jobs()
+
+def result_callback(contentmodel):
+    m = parserContext.parseContentModel(contentmodel)
+    jsonString = json.dumps(m, default = myconverter)
+    logger.info(jsonString)
+
+def myconverter(o):
+    if isinstance(o, datetime.datetime):
+        return o.__str__()
 
 create_workers()
 crawl()
