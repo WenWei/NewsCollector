@@ -3,11 +3,17 @@
 
 import os
 import codecs
+import logging
+import re
+import urllib.parse
+
+logger = logging.getLogger('root')
+
 
 # 每個網站分開的專案(資料夾)
 def create_project_dir(directory):
     if not os.path.exists(directory):
-        print('Creating project '+ directory)
+        logger.info('Creating project '+ directory)
         os.makedirs(directory)
 
 
@@ -54,3 +60,14 @@ def set_to_file(links, file):
     delete_file_contents(file)
     for link in sorted(links):
         append_to_file(file, link)
+
+# 將 cjk 轉成 url encode
+def replace_cjk_with_quote(s):
+    new_s = []
+    pattern = r'([\u2e80-\u2e99\u2e9b-\u2ef3\u2f00-\u2fd5\u3005\u3007\u3021-\u3029\u3038-\u303a\u303b\u3400-\u4db5\u4e00-\u9fc3\uf900-\ufa2d\ufa30-\ufa6a\ufa70-\ufad9\U00020000-\U0002a6d6\U0002a700-\U0002b734\U0002b740-\U0002b81d\U0002b820-\U0002cea1\U0002ceb0-\U0002ebe0\U0002f800-\U0002fa1d])'
+    for w in s:
+        if re.match(pattern, w):
+            new_s.append(urllib.parse.quote(w))
+        else:
+            new_s.append(w)
+    return "".join(new_s)

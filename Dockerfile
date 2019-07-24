@@ -1,13 +1,23 @@
-FROM python:3.7.4-alpine3.10
+FROM python:3.7.4-alpine3.10 AS base
 
-COPY . /app
+RUN apk add --update --no-cache --virtual .build-deps \
+        gcc \
+        g++ \
+        python-dev \
+        libxml2 \
+        libxml2-dev && \
+    apk add libxslt-dev
 
-RUN pip install Flask
+RUN pip install cython
 
-# ENV FLASK_APP=proxycrawler.py
-# ENV FLASK_ENV=development
 
 WORKDIR /app
+COPY . /app
+RUN rm -rf /app/data/*
+
+RUN pip install --no-cache-dir -r requirements.txt 
+RUN apk del .build-deps gcc musl-dev
+
 EXPOSE 8080
 ENTRYPOINT ["python"]
-CMD ["main.py"]
+CMD ["app.py"]

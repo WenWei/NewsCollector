@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 from .www_jinse_com import Www_Jinse_Com
-from crawl.content_model import ContentModel
+from newscollector.crawl.content_model import ContentModel
 import logging
+logger = logging.getLogger('root')
 
-logger = logging.getLogger()
 
 class ParserContext:
     parsers = []
@@ -33,17 +33,16 @@ class ParserContext:
         #     return None
         p = self.get_parser(contentmodel['page_url'])
         if p is not None:
-            #return p.parse(contentmodel)
-            return contentmodel
+            return p.parse(contentmodel)
 
-        return contentmodel
+        return None
         
 
 
 
 if __name__ == "__main__":
     context = ParserContext()
-    print(context.get_parser('https://www.jinse.com/blockchain/414531.html'))
+    logger.info(context.get_parser('https://www.jinse.com/blockchain/414531.html'))
 
 # for name, entity in parsers.__dict__.items():
 #     if not name.startswith('__'):
@@ -81,4 +80,3 @@ if __name__ == "__main__":
 #             print(obj)
 
 # clsmembers = inspect.getmembers(sys.modules[__name__], inspect.isclass)
-

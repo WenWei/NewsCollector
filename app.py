@@ -1,23 +1,22 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import logger_config
-import logging
 import threading
 from queue import Queue
-from crawl.spider import Spider
-from crawl.domain import get_domain_name
-from crawl.general import file_to_set
-from parserlib.parsercontext import ParserContext
+from newscollector.crawl.spider import Spider
+from newscollector.crawl.domain import get_domain_name
+from newscollector.crawl.general import file_to_set
+from newscollector.parserlib.parsercontext import ParserContext
 import json
 import datetime
-from dbutils import DbUtils
+from newscollector.dbutils import DbUtils
 import os
 
-
-# 執行 logger 設定
-logger_config.init()
-logger = logging.getLogger()
+import logging
+import logging.config
+from newscollector import logging_config
+#logging.config.fileConfig('./logging.conf')
+#logger = logging.getLogger('root')
 
 PROJECT_NAME = 'thenewboston'
 HOMEPAGE = 'https://www.jinse.com/'
@@ -29,6 +28,7 @@ queue = Queue()  # Thread queue
 Spider(PROJECT_NAME, HOMEPAGE, DOMAIN_NAME)
 parserContext = ParserContext()
 dbutil = DbUtils(os.getenv('NewsCollectorMongoDbConnectionString', 'mongodb://localhost:27017/'))
+
 
 # 建立工作執行緒，當主線結束也會結束
 def create_workers():
@@ -48,7 +48,7 @@ def work():
 def create_jobs():
     for link in file_to_set(QUEUE_FILE):
         queue.put(link)
-        print('put link: '+ link)
+        logger.info('put link: '+ link)
     queue.join()
     crawl()
 
@@ -56,26 +56,34 @@ def create_jobs():
 def crawl():
     queued_links = file_to_set(QUEUE_FILE)
     if len(queued_links) > 0:
-        print(str(len(queued_links)) + ' links in the queue')
+        logger.info(str(len(queued_links)) + ' links in the queue')
         create_jobs()
 
 def result_callback(contentmodel):
     m = parserContext.parseContentModel(contentmodel)
     # jsonString = json.dumps(m, default = myconverter)
     # logger.info(jsonString)
-    try:
-        db = dbutil.getDatabase(PROJECT_NAME)
-        collectionName = get_domain_name(contentmodel['page_url']).replace('.','_')
-        collection = db[collectionName]
-        collection.find_and_modify(query={'page_url':m['page_url']}, update={"$set": m}, upsert=False, full_response= True)
-        # insert_id = collection.insert_one(m).inserted_id
-        # logger.info('inserted: '+ insert_id)
-    except Exception as e:
-        logger.error(e)
+    if m is not None:
+        try:
+            db = dbutil.getDatabase(PROJECT_NAME)
+            collectionName = get_domain_name(contentmodel['page_url']).replace('.','_')
+            collection = db[collectionName]
+            collection.update_one({'page_url':m['page_url']}, {"$set":m}, upsert=True)
+            #collection.find_and_modify(query={'page_url':m['page_url']}, update={"$set": m}, upsert=False, full_response= True)
+            # insert_id = collection.insert_one(m).inserted_id
+            # logger.info('inserted: '+ insert_id)
+        except Exception as e:
+            logger.exception(e)
 
 def myconverter(o):
     if isinstance(o, datetime.datetime):
         return o.__str__()
 
-create_workers()
-crawl()
+if __name__ == '__main__':
+    # 執行 logging 設定
+    logging_config.init()
+    logger = logging.getLogger('__main__')
+    logger.info('app.py runing')
+
+    create_workers()
+    crawl()

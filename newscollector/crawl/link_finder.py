@@ -4,6 +4,10 @@
 from html.parser import HTMLParser
 from urllib import parse
 import re
+import logging
+
+logger = logging.getLogger('root')
+
 
 class LinkFinder(HTMLParser):
 
@@ -18,7 +22,7 @@ class LinkFinder(HTMLParser):
             for(attribute, value) in attrs:
                 if attribute == 'href':
                     url = parse.urljoin(self.base_url, value.strip(' \t\n\r'))
-                    print('handle_tag: '+url)
+                    logger.info('handle_tag: '+url)
                     if re.match('https?://', url):
                         self.links.append(url)
 

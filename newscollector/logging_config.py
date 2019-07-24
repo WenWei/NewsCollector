@@ -19,7 +19,7 @@ def init():
 
     logging.basicConfig(
     level=logLevel,
-    format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
+    format="%(asctime)s - %(name)s - [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
     handlers=[
         # logging.FileHandler("{0}/{1}.log".format(logPath, fileName)),
         logging.handlers.TimedRotatingFileHandler(
@@ -33,7 +33,7 @@ def init():
     logger.info('Logger initialized.')
 
 def getLogLevel():
-    logLevel = os.getenv(project_name + 'LogLevel', 'info').upper()
+    logLevel = os.getenv('NewsCollectorLogLevel', 'error').upper()
     if logLevel == 'CRITICAL':
         return logging.CRITICAL
     if logLevel == 'ERROR':
